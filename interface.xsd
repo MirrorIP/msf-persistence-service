@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	
+	targetNamespace="urn:xmpp:spaces:persistence"
+	xmlns="urn:xmpp:spaces:persistence"
+	
+	elementFormDefault="qualified">
+
+    <xs:element name="insert" type="insertType">
+    	<xs:annotation>
+    		<xs:documentation></xs:documentation>
+    	</xs:annotation></xs:element>
+    
+    <xs:element name="query" type="queryType"></xs:element>
+
+    <xs:complexType name="insertType">
+    	<xs:sequence maxOccurs="unbounded" minOccurs="0">
+    		<xs:any>
+    			<xs:annotation>
+    				<xs:documentation>Arbitrary root element of a data object.</xs:documentation>
+    			</xs:annotation>
+    		</xs:any>
+    	</xs:sequence>
+    	<xs:attribute name="spaceId" type="xs:string" use="required">
+    		<xs:annotation>
+    			<xs:documentation>ID of the space the data objects were published on.</xs:documentation>
+    		</xs:annotation></xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="queryType">
+    	<xs:choice>
+	    	<xs:sequence>
+	    		<xs:choice>
+	    			<xs:element name="object" type="objectType">
+	    				<xs:annotation>
+	    					<xs:documentation>Requests a single data object.</xs:documentation>
+	    				</xs:annotation>
+	    			</xs:element>
+
+	    			<xs:element name="objects">
+	    				<xs:annotation>
+	    					<xs:documentation>Requests multiple data objects.</xs:documentation>
+	    				</xs:annotation>
+	    				<xs:complexType>
+					    	<xs:sequence>
+					    		<xs:element minOccurs="1" maxOccurs="unbounded" name="object" type="objectType">
+					    			<xs:annotation></xs:annotation>
+					    		</xs:element>
+					    	</xs:sequence>
+					    </xs:complexType>
+	    			</xs:element>
+                    <xs:element name="objectsForSpace" type="objectForSpaceType">
+	    				<xs:annotation>
+	    					<xs:documentation>Requests the data objects for a specific space.</xs:documentation>
+	    				</xs:annotation>
+	    			</xs:element>
+                    <xs:element name="objectsForSpaces">
+	    				<xs:annotation>
+	    					<xs:documentation>Requests the data objects for multiple spaces.</xs:documentation>
+	    				</xs:annotation>
+	    				<xs:complexType>
+	    					<xs:sequence>
+	    						<xs:element name="space" maxOccurs="unbounded" minOccurs="1" type="objectForSpaceType">
+	    							<xs:annotation>
+	    								<xs:documentation>The space to retrieve data objects from.</xs:documentation>
+	    							</xs:annotation>
+	    						</xs:element>
+	    					</xs:sequence>
+	    				</xs:complexType>
+	    			</xs:element>
+                </xs:choice>
+	    		<xs:element name="filters" type="filterType" maxOccurs="1" minOccurs="0"></xs:element>
+	    		
+	    	</xs:sequence>
+	    	<xs:sequence>
+	    		<xs:element name="result" type="resultType" maxOccurs="1" minOccurs="1"></xs:element>
+	    	</xs:sequence>
+    	</xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="objectForSpaceType">
+    	<xs:attribute use="required" name="id" type="xs:string">
+    		<xs:annotation></xs:annotation>
+    	</xs:attribute>
+    </xs:complexType>
+    <xs:complexType name="objectType">
+    	<xs:attribute use="required" name="id" type="xs:string">
+    		<xs:annotation></xs:annotation>
+    	</xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="filterType">
+    	<xs:choice maxOccurs="unbounded" minOccurs="1">
+    		<xs:element name="period" type="periodFilterType">
+    			<xs:annotation>
+    				<xs:documentation>Restricts the period of publishing. </xs:documentation>
+    			</xs:annotation></xs:element>
+    		<xs:element name="publisher" type="xs:string">
+    			<xs:annotation>
+    				<xs:documentation>Only data objects from the given publisher (bare-JID or full-JID) are returned. Removes all non-personalized data objects.</xs:documentation>
+    			</xs:annotation></xs:element>
+    		<xs:element name="namespace" type="namespaceType">
+    			<xs:annotation>
+    				<xs:documentation>Restricts the query to specific namespaces, e.g. "mirror:application:moodmap:mood".</xs:documentation>
+    			</xs:annotation>
+    		</xs:element>
+    		<xs:element name="dataModel" type="dataModelFilterType">
+    			<xs:annotation>
+    				<xs:documentation>Filter for data model information.</xs:documentation>
+    			</xs:annotation></xs:element>
+    		<xs:element name="references" type="referencesFilterType">
+    			<xs:annotation>
+    				<xs:documentation>Request only data objects which refer to a specific object.</xs:documentation>
+    			</xs:annotation></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="periodFilterType">
+    	<xs:attribute name="from" type="xs:dateTime">
+    		<xs:annotation>
+    			<xs:documentation>Specifies the earliest point in time the object was published.</xs:documentation>
+    		</xs:annotation></xs:attribute>
+    	<xs:attribute name="to" type="xs:dateTime">
+    		<xs:annotation>
+    			<xs:documentation>Specifies the latest point in time the object was published.</xs:documentation>
+    		</xs:annotation></xs:attribute>
+    </xs:complexType>
+
+
+    <xs:complexType name="namespaceType">
+    	<xs:simpleContent>
+    		<xs:extension base="xs:string">
+    			<xs:attribute name="compareType" default="strict">
+    				<xs:annotation>
+    					<xs:documentation>Defines the type of comparision. Either "strict" (default), "contains", or "regex". The choice influences also the performance of the filter.</xs:documentation>
+    				</xs:annotation>
+    				<xs:simpleType>
+    					<xs:restriction base="xs:string">
+    						<xs:enumeration value="contains"></xs:enumeration>
+    						<xs:enumeration value="strict"></xs:enumeration>
+    						<xs:enumeration value="regex"></xs:enumeration>
+    					</xs:restriction>
+    				</xs:simpleType>
+    			</xs:attribute>
+    		</xs:extension>
+    	</xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="dataModelFilterType">
+    	<xs:attribute name="namespace" type="xs:string" use="required">
+    		<xs:annotation>
+    			<xs:documentation>Namespace of the data model the data object have to implement. Checked for equality.</xs:documentation>
+    		</xs:annotation></xs:attribute>
+    	<xs:attribute name="version" type="xs:string">
+    		<xs:annotation>
+    			<xs:documentation>Version of the data model.</xs:documentation>
+    		</xs:annotation></xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="referencesFilterType">
+    	<xs:attribute name="id" type="xs:string" use="required">
+    		<xs:annotation>
+    			<xs:documentation>Data object id of the referenced object.</xs:documentation>
+    		</xs:annotation></xs:attribute>
+    </xs:complexType>
+
+    <xs:element name="delete" type="deleteType">
+    	<xs:annotation>
+    		<xs:documentation>Delete one or more objects. Only permitted to space moderators.</xs:documentation>
+    	</xs:annotation></xs:element>
+    
+    <xs:complexType name="deleteType">
+    	<xs:choice maxOccurs="1" minOccurs="1">
+    		<xs:element name="object" type="objectType" maxOccurs="1" minOccurs="1">
+    			<xs:annotation>
+    				<xs:documentation>The data object to delete.</xs:documentation>
+    			</xs:annotation>
+    		</xs:element>
+    		<xs:element name="objects" maxOccurs="1" minOccurs="1">
+    			<xs:annotation>
+    				<xs:documentation>
+    					List of data objects to delete.
+    				</xs:documentation>
+    			</xs:annotation>
+    			<xs:complexType>
+    				<xs:sequence>
+    					<xs:element name="object" type="objectType"
+    						maxOccurs="unbounded" minOccurs="1">
+    					</xs:element>
+    				</xs:sequence>
+    			</xs:complexType>
+    		</xs:element>
+
+    	</xs:choice>
+    	<xs:attribute name="objectsDeleted" type="xs:nonNegativeInteger">
+    		<xs:annotation>
+    			<xs:documentation>Number of objects deleted with the request. Part of the reponse.</xs:documentation>
+    		</xs:annotation></xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="resultType">
+    	<xs:sequence maxOccurs="unbounded" minOccurs="0">
+    		<xs:any></xs:any>
+    	</xs:sequence>
+    </xs:complexType>
+
+    <xs:element name="version" type="xs:string">
+    	<xs:annotation>
+    		<xs:documentation>Version information of the service.</xs:documentation>
+    	</xs:annotation></xs:element>
+</xs:schema>

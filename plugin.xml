@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<plugin>
+    <class>de.imc.mirror.persistenceservice.PersistencePlugin</class>
+    <name>MIRROR Persistence Service</name>
+    <description>Persists data published on pubsub nodes managed by MIRROR spaces.</description>
+    <author>Simon Schwantzer</author>
+    <version>0.2.1</version>
+    <date>01/09/2014</date>
+    <url>http://www.mirror-project.eu/</url>
+    <minServerVersion>3.8.0</minServerVersion>
+    <databaseKey>spacePersistenceService</databaseKey>
+    <databaseVersion>0</databaseVersion>
+</plugin>
