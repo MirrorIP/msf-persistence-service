@@ -5,10 +5,18 @@
     <name>MIRROR Persistence Service</name>
     <description>Persists data published on pubsub nodes managed by MIRROR spaces.</description>
     <author>Simon Schwantzer</author>
-    <version>0.2.1</version>
-    <date>01/09/2014</date>
+    <version>0.3.0</version>
+    <date>04/02/2014</date>
     <url>http://www.mirror-project.eu/</url>
     <minServerVersion>3.8.0</minServerVersion>
     <databaseKey>spacePersistenceService</databaseKey>
     <databaseVersion>0</databaseVersion>
+    
+    <adminconsole>
+        <tab id="tab-spaces">
+            <sidebar id="settings">
+               <item id="persistence-settings" name="Persistence Settings" url="persistence-settings.jsp" description="Settings for the Persistence Service."/>
+            </sidebar>
+        </tab>
+    </adminconsole>
 </plugin>

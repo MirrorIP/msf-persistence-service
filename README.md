@@ -22,12 +22,18 @@ To install the plugin perform the following steps:
 To update an existing installation follow steps 1) - 3) of the installation. Stored data will remain unaffected.
 
 ## Usage
+The service can be configured using the Openfire administration console: "MIRROR Spaces" > "Settings" > "Persistence Settings"
 API specifications and examples can be found in the `doc` directory.
+
 
 ## License
 The MIRROR Spaces Service is released under the [Apache License 2.0][5].
 
 ## Changelog
+
+v0.3.0 -- April 2, 2014
+
+* [NEW] Added an option to authorize the publisher of a data object to delete it as well. Requires the publisher to be stored in the data object.
 
 v0.2.1 -- January 9, 2014
 

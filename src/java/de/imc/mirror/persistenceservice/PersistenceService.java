@@ -5,10 +5,12 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
+import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.TaskEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -213,15 +215,31 @@ public class PersistenceService extends AbstractComponent {
 		// request space identifiers
 		int numberOfDeletedObjects;
 		try {
-			Set<String> spaceIds = dbConnector.retrieveSpacesForObjects(objectIds);
+			Map<String, String> spaceIds = dbConnector.retrieveSpacesForObjects(objectIds);
+			
 			// check requester authorization to delete all objects
 			String requesterBareJID = deleteIq.getFrom().toBareJID();
-			for (String spaceId : spaceIds) {
-				Space space = spaceManager.getSpace(spaceId);
-				if (!space.isModerator(requesterBareJID)) {
-					String errorDescription = "Only moderators of a space may delete its data objects.";
-					PacketError packetError = new PacketError(PacketError.Condition.not_allowed, PacketError.Type.cancel, errorDescription);
-					return createErrorIQ(deleteIq, packetError);
+			boolean allowPublishersToDelete = JiveGlobals.getBooleanProperty("msf.persistence.allowPublishersToDelete", false);
+			for (String observedObjectId : objectIds) {
+				String spaceId = spaceIds.get(observedObjectId);
+				if (spaceId == null) {
+					continue;
+				} else {
+					Space space = spaceManager.getSpace(spaceId);
+					if (!space.isModerator(requesterBareJID)) {
+						if (!allowPublishersToDelete) {
+							String errorDescription = "Only moderators are authorized to delete data objects from a space.";
+							PacketError packetError = new PacketError(PacketError.Condition.not_allowed, PacketError.Type.cancel, errorDescription);
+							return createErrorIQ(deleteIq, packetError);
+						}
+						DataObject dataObject = dbConnector.retrieveObject(observedObjectId);
+						String publisher = dataObject.getPublisher();
+						if (publisher == null || !publisher.startsWith(requesterBareJID)) {
+							String errorDescription = "The requester is neither moderator of the related space nor stored as publisher for the data object.";
+							PacketError packetError = new PacketError(PacketError.Condition.not_allowed, PacketError.Type.cancel, errorDescription);
+							return createErrorIQ(deleteIq, packetError);
+						}
+					}
 				}
 			}
 			numberOfDeletedObjects = dbConnector.deleteObjects(objectIds);
@@ -244,6 +262,10 @@ public class PersistenceService extends AbstractComponent {
 					PacketError.Condition.internal_server_error,
 					PacketError.Type.wait,
 					"Failed to request space from Spaces Service.");
+			return createErrorIQ(deleteIq, packetError);
+		} catch (DocumentException e) {
+			log.warn("Failed to parse data object.", e);
+			PacketError packetError = new PacketError(PacketError.Condition.internal_server_error, PacketError.Type.wait, "Failed to access stored data objects.");
 			return createErrorIQ(deleteIq, packetError);
 		}
 		

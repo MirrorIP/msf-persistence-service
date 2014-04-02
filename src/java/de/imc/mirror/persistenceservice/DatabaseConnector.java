@@ -1,6 +1,7 @@
 package de.imc.mirror.persistenceservice;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.dom4j.DocumentException;
@@ -44,6 +45,14 @@ public interface DatabaseConnector {
 	public List<DataObject> retrieveObjects(Set<String> objectIds, FilterSet filterSet) throws DBAccessException;
 	
 	/**
+	 * Returns the data object with the given identifier.
+	 * @param objectId Data object identifier.
+	 * @return Data object or <code>null</code> if no data object with the given identifier is stored.
+	 * @throws DBAccessException
+	 */
+	public DataObject retrieveObject(String objectId) throws DBAccessException;
+	
+	/**
 	 * Deletes all data objects published on the given space.
 	 * @param space Identifier for the space to delete related data objects. 
 	 * @return Number of objects deleted.
@@ -62,12 +71,11 @@ public interface DatabaseConnector {
 	
 	/**
 	 * Returns the spaces the given objects are stored in.
-	 * Invalid object IDs will be ignored.
 	 * @param objectIds Identifiers for the objects to return related space. 
-	 * @return Set of space identifiers.
+	 * @return Map with object identifiers as keys and space identifiers as values. If a data object is not found, the value of the entry is <code>null</code>.
 	 * @throws DBAccessException The database access failed.
 	 */
-	public Set<String> retrieveSpacesForObjects(Set<String> objectIds) throws DBAccessException;
+	public Map<String, String> retrieveSpacesForObjects(Set<String> objectIds) throws DBAccessException;
 	
 	/**
 	 * Deletes all data objects which expiration date lies in the past.

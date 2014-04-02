@@ -40,6 +40,7 @@ public abstract class AbstractSQLConnector implements DatabaseConnector {
 	
 	private static final String SQL_SELECT_BY_SPACE = "SELECT * from " + TABLE_DATA + " WHERE " + COLUMN_SPACEID + " = ?";
 	private static final String SQL_SELECT_BY_OBJECT_IDS = "SELECT * from " + TABLE_DATA + " WHERE " + COLUMN_OBJECTID + " IN ";
+	private static final String SQL_SELECT_BY_OBJECT_ID = "SELECT * from " + TABLE_DATA + " WHERE " + COLUMN_OBJECTID + " = ?";
 	private static final String SQL_SELECT_REFERRING_OBJECTS = "SELECT " + COLUMN_REFERRER + "," + COLUMN_REFERENCE + " FROM " + TABLE_DEPENDENCIES;
 	private static final String SQL_INSERT_DATA_OBJECT = "INSERT INTO " + TABLE_DATA + " (" + COLUMN_OBJECTID + "," + COLUMN_SPACEID + "," + COLUMN_EXPIRATIONDATE + "," + COLUMN_XMLELEMENT + ") VALUES (?,?,?,?)";
 	private static final String SQL_INSERT_DEPENDENCIES = "INSERT INTO " + TABLE_DEPENDENCIES + " (" + COLUMN_REFERRER + "," + COLUMN_REFERENCE + "," + COLUMN_SPACEID + ") VALUES (?,?,?)";
@@ -47,7 +48,7 @@ public abstract class AbstractSQLConnector implements DatabaseConnector {
 	private static final String SQL_DELETE_DEPENDENCIES_BY_SPACE = "DELETE FROM " + TABLE_DEPENDENCIES + " WHERE " + COLUMN_SPACEID + " = ?";
 	private static final String SQL_DELETE_OBJECTS = "DELETE FROM " + TABLE_DATA + " WHERE " + COLUMN_OBJECTID + " IN ";
 	private static final String SQL_DELETE_DEPENDENCIES_OF_OBJECTS = "DELETE FROM " + TABLE_DEPENDENCIES + " WHERE " + COLUMN_REFERRER + " IN ";
-	private static final String SQL_SPACES_BY_OBJECTS = "SELECT " + COLUMN_SPACEID + " FROM " + TABLE_DATA + " WHERE " + COLUMN_OBJECTID + " IN ";
+	private static final String SQL_SPACE_BY_OBJECT = "SELECT " + COLUMN_SPACEID + " FROM " + TABLE_DATA + " WHERE " + COLUMN_OBJECTID + " = ?";
 	private static final String SQL_SELECT_EXPIRED_OBJECTS = "SELECT " + COLUMN_OBJECTID + " FROM " + TABLE_DATA + " WHERE " + COLUMN_EXPIRATIONDATE + " < ?";
 	
 	/**
@@ -166,6 +167,36 @@ public abstract class AbstractSQLConnector implements DatabaseConnector {
 	}
 	
 	@Override
+	public DataObject retrieveObject(String objectId) throws DBAccessException {
+		Connection connection = null;
+		PreparedStatement stmt = null;
+		ResultSet result = null;
+		DataObject dataObject;
+		try {
+			connection = DbConnectionManager.getConnection();
+			stmt = connection.prepareStatement(SQL_SELECT_BY_OBJECT_ID);
+			stmt.setString(1, objectId);
+			result = stmt.executeQuery();
+			if (result.next()) {
+				String spaceId = result.getString(COLUMN_SPACEID);
+				Timestamp expirationDate = result.getTimestamp(COLUMN_EXPIRATIONDATE);
+				String xmlElementString = result.getString(COLUMN_XMLELEMENT);
+				dataObject = new DataObject(xmlElementString, spaceId);
+				if (expirationDate != null) {
+					dataObject.setExpirationDate(new java.util.Date(expirationDate.getTime()));
+				}
+			} else {
+				dataObject = null;
+			}
+		} catch (SQLException e) {
+			throw new DBAccessException("Failed to retrieve data objects from database.", e);
+		} finally {
+			DbConnectionManager.closeConnection(result, stmt, connection);
+		}
+		return dataObject;
+	}
+	
+	@Override
 	public void storeDataObject(DataObject dataObject) throws DBAccessException, DocumentException {
 		java.util.Date expirationDate = dataObject.getExpirationDate();
 		String objectId = dataObject.getId();
@@ -256,23 +287,20 @@ public abstract class AbstractSQLConnector implements DatabaseConnector {
 	}
 
 	@Override
-	public Set<String> retrieveSpacesForObjects(Set<String> objectIds) throws DBAccessException {
-		Set<String> spaceIds = new HashSet<String>();
+	public Map<String, String> retrieveSpacesForObjects(Set<String> objectIds) throws DBAccessException {
+		Map<String, String> spaceIds = new HashMap<String, String>();
+		
 		Connection connection = null;
 		PreparedStatement stmt = null;
 		ResultSet result = null;
 		try {
 			connection = DbConnectionManager.getConnection();
-			stmt = connection.prepareStatement(SQL_SPACES_BY_OBJECTS + createPlaceHolderTuple(objectIds.size()));
-			Iterator<String> objectIdIterator = objectIds.iterator();
-			int i = 1;
-			while (objectIdIterator.hasNext()) {
-				stmt.setString(i, objectIdIterator.next());
-				i++;
-			}
-			result = stmt.executeQuery();
-			while (result.next()) {
-				spaceIds.add(result.getString(COLUMN_SPACEID));
+			stmt = connection.prepareStatement(SQL_SPACE_BY_OBJECT);
+			for (String objectId : objectIds) {
+				stmt.setString(1, objectId);
+				result = stmt.executeQuery();
+				spaceIds.put(objectId, result.next() ? result.getString(COLUMN_SPACEID) : null);
+				result.close();
 			}
 		} catch (SQLException e) {
 			throw new DBAccessException("Failed to retrieve space identifiers from database.", e);
