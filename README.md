@@ -24,8 +24,7 @@ To update an existing installation follow steps 1) - 3) of the installation. Sto
 ## Usage
 The service can be configured using the Openfire administration console: "MIRROR Spaces" > "Settings" > "Persistence Settings"
 
-API specifications and examples can be found in the `doc` directory.
-
+The documentation of the service is available [online](https://github.com/MirrorIP/msf-persistence-service/wiki).
 
 ## License
 The MIRROR Spaces Service is released under the [Apache License 2.0][5].
